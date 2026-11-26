@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#e0457b"><title>لعبة الذاكرة</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+body{margin:0;font-family:"Noto Sans Arabic","Segoe UI",Tahoma,sans-serif;background:linear-gradient(160deg,#e0457b,#f39c12);min-height:100vh;padding:14px;color:#2a2340}
+.app{max-width:460px;margin:auto}h1{color:#fff;text-align:center;margin:6px 0 10px;font-size:24px}
+.bar{display:flex;gap:8px;margin-bottom:10px}.bar div{flex:1;background:#fff;border-radius:14px;padding:8px;text-align:center;font-size:12px;color:#7a6fa0}
+.bar b{display:block;font-size:20px;color:#e0457b}
+.lv{display:flex;gap:6px;margin-bottom:10px}.lv button{flex:1;border:0;border-radius:12px;padding:9px;font:inherit;font-weight:700;background:#ffffffaa;color:#c2335f}.lv .on{background:#fff;color:#e0457b}
+.grid{display:grid;gap:8px}
+.c{aspect-ratio:1;perspective:600px;border:0;background:none;padding:0}
+.c i{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:16px;font-style:normal;font-size:34px;transition:transform .35s;transform-style:preserve-3d;background:#fff;box-shadow:0 4px 10px #0003}
+.c .back{background:linear-gradient(135deg,#6c4ad8,#9b6df0);color:#fff;font-size:28px}
+.c.flip i{transform:rotateY(180deg)}
+.c i{backface-visibility:hidden}
+.c.show .back{display:none}.c .front{display:none}.c.show .front,.c.flip .front{display:flex}.c.flip .back{display:none}
+.c.ok i{background:#c9f5d9;animation:p .4s}
+@keyframes p{50%{transform:scale(1.12)}}
+.msg{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:20px}
+.msg.on{display:flex}.box{background:#fff;border-radius:24px;padding:24px;text-align:center;max-width:320px}
+.box h2{margin:0 0 8px;color:#e0457b}.box button{border:0;background:#e0457b;color:#fff;font:inherit;font-weight:700;padding:12px 28px;border-radius:14px;margin-top:12px;font-size:16px}
+.reset{display:block;margin:12px auto 0;border:0;background:#fff;color:#e0457b;font:inherit;font-weight:700;padding:10px 24px;border-radius:14px}
+</style></head><body><div class="app"><h1>🧠 لعبة الذاكرة</h1>
+<div class="bar"><div><b id="mv">٠</b>حركات</div><div><b id="tm" style="direction:ltr">٠:٠٠</b>الوقت</div><div><b id="bs">-</b>أفضل نتيجة</div></div>
+<div class="lv" id="lv"></div><div class="grid" id="g"></div>
+<button class="reset" id="rs">لعب من جديد</button></div>
+<div class="msg" id="m"><div class="box"><h2>🎉 برافو عليكي!</h2><div id="mt"></div><button id="ag">العبي تاني</button></div></div>
+<script>
+const $=i=>document.getElementById(i),AR=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+const E=['🍎','🐱','🚀','🌸','⚽','🎧','🍕','🦋','🐼','🌙','🎈','🍓'];
+const L=[['سهل',4,3],['وسط',4,4],['صعب',4,6]]; // cols, rows
+let lv=+(localStorage.gl||0),first=null,lock=false,mv=0,found=0,t0=0,tick=null,best=JSON.parse(localStorage.gb||'{}');
+function fmt(s){return AR(Math.floor(s/60)+':'+String(s%60).padStart(2,'0'))}
+function start(){clearInterval(tick);tick=null;mv=0;found=0;first=null;lock=false;
+ const [n,c,r]=[L[lv][0],L[lv][1],L[lv][2]],pairs=c*r/2,cards=[...E.slice(0,pairs),...E.slice(0,pairs)].sort(()=>Math.random()-.5);
+ const g=$('g');g.style.gridTemplateColumns=`repeat(${c},1fr)`;g.innerHTML='';
+ cards.forEach(e=>{const b=document.createElement('button');b.className='c';b.dataset.e=e;b.innerHTML=`<i class="back">؟</i><i class="front">${e}</i>`;b.onclick=()=>pick(b);g.appendChild(b)});
+ $('mv').textContent='٠';$('tm').textContent='٠:٠٠';$('bs').textContent=best[lv]?AR(best[lv])+' حركة':'-';
+ [...$('lv').children].forEach((b,i)=>b.classList.toggle('on',i==lv))}
+function pick(b){if(lock||b.classList.contains('flip')||b.classList.contains('ok'))return;
+ if(!tick){t0=Date.now();tick=setInterval(()=>$('tm').textContent=fmt(Math.floor((Date.now()-t0)/1000)),500)}
+ b.classList.add('flip');if(!first){first=b;return}
+ mv++;$('mv').textContent=AR(mv);
+ if(first.dataset.e==b.dataset.e){first.classList.add('ok');b.classList.add('ok');first=null;if(++found*2==$('g').children.length)win();vib(40)}
+ else{lock=true;const a=first;first=null;setTimeout(()=>{a.classList.remove('flip');b.classList.remove('flip');lock=false},800)}}
+function vib(x){navigator.vibrate&&navigator.vibrate(x)}
+function win(){clearInterval(tick);const s=Math.floor((Date.now()-t0)/1000);let t=`خلصتي في ${AR(mv)} حركة و${fmt(s)} دقيقة`;
+ if(!best[lv]||mv<best[lv]){best[lv]=mv;localStorage.gb=JSON.stringify(best);t+='<br>⭐ رقم قياسي جديد!'}
+ $('mt').innerHTML=t;$('m').classList.add('on');vib([100,50,100])}
+L.forEach((l,i)=>{const b=document.createElement('button');b.textContent=l[0];b.onclick=()=>{lv=i;localStorage.gl=i;start()};$('lv').appendChild(b)});
+$('rs').onclick=start;$('ag').onclick=()=>{$('m').classList.remove('on');start()};start();
+</script></body></html>
